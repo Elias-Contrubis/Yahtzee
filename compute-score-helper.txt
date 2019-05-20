@@ -1,0 +1,183 @@
+;;============================================
+;; CMPU-101, Spring 2017
+;; compute-score-helper.txt
+;;============================================
+
+
+;; DICE-VECTOR-SUMMER
+;;---------------------------------------------------------
+;; INPUT: VECK-O-DICE. a vector of five dice values
+;; ACC: holds the value of the summed dice
+;; OUTPUTL: the total of all the dice added together
+
+(define dice-vector-summer
+  (lambda (veck-o-dice)
+    ;;create a local variable acc with value 0
+    (let ((acc 0))
+      ;;do times through the vector summing the numbers
+      ;;in the vector
+      (dotimes (i (vector-length veck-o-dice))
+               (set! acc (+ acc (vector-ref veck-o-dice i))))
+      acc)))
+
+
+;; HAS-LARGE-STRAIGHT?
+;; --------------------------------------------------------
+;; INPUT: VECK-O-DICE, a vector of five dice values
+;; OUTPUT: #t if the vector of dice contains all of the
+;; numbers in {1,2,3,4,5} or {2,3,4,5,6}, in any order;
+;; #f otherwise.
+
+(define has-large-straight?
+  (lambda (veck-o-dice)
+    ;;uses compute-histogram: there are only two positions
+    ;;that large straight can be in
+    (or (equal? (compute-histogram veck-o-dice) #(0 1 1 1 1 1 0))
+        (equal? (compute-histogram veck-o-dice) #(0 0 1 1 1 1 1)))))
+
+
+;; HAS-SMALL-STRAIGHT?
+;;-----------------------
+;; Similar to has-large-straight?
+
+(define has-small-straight?
+  (lambda (veck-o-dice)
+    ;; First, compute the histogram
+    (let ((histy (compute-histogram veck-o-dice)))
+      ;; A large straight *MUST* contain exactly one 2, 3, 4 and 5,
+      ;; and if it does, it will then contain either a 1 or 6
+      ;; as its last die (so don't need to check that explicitly).
+      (and (>= (vector-ref histy 3) 1)
+           (>= (vector-ref histy 4) 1)
+           (or  (>= (vector-ref histy 1) 1)
+                (>= (vector-ref histy 2) 1)
+                (>= (vector-ref histy 5) 1)
+                (>= (vector-ref histy 2) 1))))))
+
+;;---------------------
+;; Three of a kind
+;;---------------------
+
+;;  COMPUTE-HISTOGRAM
+;; -----------------------------------------------------------
+;;  INPUT:  VECK-O-DICE, a vector of dice (valued 1 thru 6)
+;;  OUTPUT:  A vector of length 7, where the ith slot contains
+;;    the number of occurrences of i in the VECK-O-DICE.
+;;    Note that the 0th slot of the histogram is ignored.
+
+(define compute-histogram
+  (lambda (veck-o-dice)
+    ;; First, create a vector of length 7
+    (let ((histy (make-vector 7)))
+      ;; Then walk thru the vector of dice
+      (dotimes (i (vector-length veck-o-dice))
+               ;; DIE-I is the value of the Ith die
+               (let ((die-i (vector-ref veck-o-dice i)))
+                 ;; DIE-I is the INDEX into the histogram
+                 ;; Increment the DIE-Ith slot of the histogram
+                 (vector-set! histy
+                              die-i
+                              (+ 1 (vector-ref histy die-i)))))
+      ;; Return the histogram as output
+      histy)))
+
+
+;; VECK-HAS-SATISFIER?
+;; ------------------------------------------------------
+;; INPUTS: FUNK, a predicate that expects one input
+;; VECK, a vector of suitable inputs for FUNK
+;; OUTPUT: #t, if VECK contains an element that satisfies
+;; FUNK (i.e., that makes FUNK return #t)
+;; #f, otherwise.
+
+;;VECk-HAS-SATISFIER-HELPER? 
+;;-------------------------------------------------------
+;; INPUTS: FUNK, a predicate that expects one input
+;; I, an index into the vector veck
+;; VECK, a vector of suitable inputs for FUNK
+;; OUTPUT: #t, if VECK contains an element that satisfies
+;; FUNK (i.e., that makes FUNK return #t)
+;; #f, otherwise.
+
+(define veck-has-satisfier-helper?
+  (lambda (funk i veck)
+    (cond
+      ;;Base Case if every element in the vector has
+      ;;been checked
+      ((= i (vector-length veck))
+       #f)
+      ;;Base Case if the element in the vector returns
+      ;;true for the predicate
+      ((eq? (funk (vector-ref veck i)) #t)
+       #t)
+      ;;Recursive case
+      (else
+       (veck-has-satisfier-helper? funk (+ i 1) veck)))))
+
+(define veck-has-satisfier?
+  (lambda (funk veck)
+    (veck-has-satisfier-helper? funk 0 veck)))
+
+;;  HAS-THREE-OF-A-KIND?
+;; ---------------------------------------------------------
+;;  INPUT:   VECK-O-DICE
+;;  OUTPUT:  #t if the vector of dice contains *at least*
+;;             three of one kind; #f otherwise.
+
+(define has-three-of-a-kind?
+  (lambda (veck-o-dice)
+    ;;uses veck-has-satisfier with the function x >= 3
+    (veck-has-satisfier? (lambda (x) (>= x 3))
+                         (compute-histogram veck-o-dice))))
+
+;; HAS-FOUR-OF-A-KIND?
+;;----------------------------------------------------------
+;; Similar to has-three-of-a-kind
+
+(define has-four-of-a-kind?
+  (lambda (veck-o-dice)
+    ;;uses veck-has-satisfier with the function x >= 4
+    (veck-has-satisfier? (lambda (x) (>= x 4))
+                         (compute-histogram veck-o-dice))))
+
+;; YAHTZEE?
+;;----------------------------------------------------------
+;; Similar to has-three-of-a-kind
+
+(define yahtzee?
+  (lambda (veck-o-dice)
+    ;;uses veck-has-satisfier with the function x >= 5
+    (veck-has-satisfier? (lambda (x) (= x 5))
+                         (compute-histogram veck-o-dice))))
+
+;;  COMPUTE-SCORE-FOR-CAT
+;; ------------------------------------------------------
+;;  INPUTS:  VECK-O-DICE, a vector of dice (any length)
+;;           CAT, a category from 1 to 6, inclusive
+;;  OUTPUT:  The total of the dice in VECK-O-DICE that
+;;           match CAT.
+
+(define compute-score-for-cat
+  (lambda (cat veck-o-dice)
+    (let ((acc 0))
+      (dotimes (i (vector-length veck-o-dice))
+               (cond
+                 ;;checks if the number in vector is equal
+                 ;;to the number of catagory
+                 ((= (vector-ref veck-o-dice i) cat)
+                  (set! acc (+ acc cat)))))
+      ;; Return the accumulator
+      acc)))
+
+;; FULL-HOUSE?
+;;----------------------------------------------------
+;;  INPUT:   VECK-O-DICE
+;;  OUTPUT:  #t if the vector of dice contains three of a one kind
+;;             and two of another kind; #f otherwise.
+
+(define full-house?
+  (lambda (veck-o-dice)
+    ;;uses the idea of three of a kind for full house
+    (veck-has-satisfier? (and (lambda (x) (= x 3))
+                              (lambda (z) (= z 2)))
+                         (compute-histogram veck-o-dice))))

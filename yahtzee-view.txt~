@@ -1,0 +1,22 @@
+;; ===============================
+;;  CMPU-101, Spring 2017
+;;  yahtzee-view.txt
+;; ===============================
+
+(load "yahtzee-model.txt")
+
+;;  YAHTZEE->STRING
+;; -------------------------------------------
+;;  INPUT:  G, a YAHTZEE data structure
+;;  OUTPUT: A string containing the info that a 
+;;    player might want to see during a game of
+;;    Yahtzee. 
+
+(define yahtzee->string
+  (lambda (g)
+   (format (string-append "Game State: ~A" (yahtzee-state g)
+                          "Score: ~A" (yahtzee-scores g)
+                          "Your Dice: ~A" (yahtzee-dice g)
+                          "Rolls Left: ~A" (yahtzee-num-rolls-left g)
+                          "Turns Left: ~A" (yahtzee-num-turns-left g)))
+   ))

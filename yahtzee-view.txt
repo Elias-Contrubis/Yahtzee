@@ -1,0 +1,40 @@
+;; ===============================
+;;  CMPU-101, Spring 2017
+;;  yahtzee-view.txt
+;; ===============================
+
+
+;;  YAHTZEE->STRING
+;; -------------------------------------------
+;;  INPUT:  G, a YAHTZEE data structure
+;;  OUTPUT: A string containing the info that a 
+;;    player might want to see during a game of
+;;    Yahtzee. 
+
+(define yahtzee->string
+  (lambda (g)
+    (string-append (format  "Game State: ~A~%" (yahtzee-state g))
+                   (format "Score: ~A~%" (yahtzee-scores g))
+                   (format "Your Dice: ~A~%" (yahtzee-dice g))
+                   (format "Rolls Left: ~A~%" (yahtzee-num-rolls-left g))
+                   (format "Turns Left: ~A~%" (yahtzee-num-turns-left g))
+                   (format "Carl's Score: ~A~%" (vector-ref carl 0)))
+    ))
+
+;;  GAME-OVER->STRING
+;; -------------------------------------------
+;;  INPUT:  G, a YAHTZEE data structure
+;;  OUTPUT: A string containing the bonus and total score
+
+(define game-over->string
+  (lambda (g)
+    (string-append (format "Bonus: ~A~%" (vector-ref (yahtzee-scores g) 
+                                                     *bonus*))
+                   (format "Total: ~A~%" (vector-ref (yahtzee-scores g) 
+                                                     *total*))
+                   (format "Carl: ~A~%" (vector-ref carl 0))
+                   (if
+                    (>= (vector-ref (yahtzee-scores g) *total*)
+                        (vector-ref carl 0))
+                    (format "Congratulations! You beat Carl~%~%")
+                    (format "Sorry, you lost to Carl~%~%")))))

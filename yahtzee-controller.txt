@@ -1,0 +1,207 @@
+;; =============================
+;;  CMPU-101, Spring 2017
+;;  yahtzee-controller.txt
+;; =============================
+
+(load "compute-score-helper.txt")
+
+;;  ROLL-SOME!
+;; -----------------------------------
+;;  INPUTS:  G, a YAHTZEE struct (the game)
+;;           ROLLER, a vector of the same length as the DICE vector
+;;             in the YAHTZEE struct, where each 1 indicates that
+;;             the die should be rolled, 0 that it should not.
+;;  OUTPUT:  Don't care
+;;  SIDE EFFECTS:  If appropriate, rolls the specified dice and 
+;;    modifies the fields of the YAHTZEE data structure accordingly.
+
+(define roll-some!
+  (lambda (g roller)
+    ;;create local variables for yahtzee data struc
+    (let ((state (yahtzee-state g))
+          (dice (yahtzee-dice g))
+          (roll-left (yahtzee-num-rolls-left g)))
+      (cond
+        ;;if the state is *time-to-roll*
+        ((eq? state *time-to-roll*)
+         (roll-dice dice roller)
+         (cond
+           ;;When the player has three roles left
+           ((member roll-left '(2 3))
+            (set-yahtzee-num-rolls-left! g (- roll-left 1)))
+           ;;When there is one role left
+           (else
+            (set-yahtzee-num-rolls-left! g 0)
+            (set-yahtzee-state! g *time-to-score*))))
+        ;;if the state is not *time-to-roll*
+        (else
+         (printf "NOT TIME TO ROLL~%")))
+      )))
+
+
+;; ROLL-DICE
+;; --------------------------------
+;; INPUTS: DICE-VECK, a vector of dice values
+;; ROLLER, a vector of the same length as DICE-VECK,
+;; but consisting solely of 1s and 0s
+;; OUTPUT: DICE-VECK, modified as described below
+;; SIDE EFFECT: Walks through the two input vectors in parallel.
+;; For each index I, if the Ith element of ROLLER is a 1, then
+;; the Ith element of DICE-VECK is replaced by a random toss
+;; of a 6-sided die; otherwise, it is unchanged.
+
+(define roll-dice
+  (lambda (dice-veck roller)
+    (dotimes (i (vector-length dice-veck))
+             ;;Body of dotimes
+             ;;if I is equal to 1 randomly select number b/w 1 and 6
+             (if (= (vector-ref roller i) 1)
+                 (vector-set! dice-veck i (+ 1 (random 6)))))
+    dice-veck))
+
+
+;;  COMPUTE-SCORE
+;; ----------------------------------
+;;  INPUTS:  DICE, a vector of 5 dice
+;;           CAT, a *legal* category (see the categories 
+;;                defined in "yahtzee-model.txt")
+;;  OUTPUT:  The score for the given dice in the given
+;;           category (even if 0).
+
+(define compute-score
+  (lambda (dice cat)
+    (cond
+      ;; Case 1:  Top six categories
+      ((member cat *upper-slots*)
+       (compute-score-for-cat cat dice))       
+      ;; Case 2:  3 of a kind
+      ((eq? cat *3-of-a-kind*)
+       (if (has-three-of-a-kind? dice)
+           (dice-vector-summer dice)
+           0))
+      ;; Case 3:  4 of a kind
+      ((eq? cat *4-of-a-kind*)
+       (if (has-four-of-a-kind? dice)
+           (dice-vector-summer dice)
+           0))
+      ;; Case 4:  Full house
+      ((eq? cat *full-house*)
+       (if (full-house? dice)
+           25
+           0))
+      ;; Case 5:  Small straight
+      ((eq? cat *small-straight*)
+       (if (has-small-straight? dice)
+           30
+           0))
+      ;; Case 6:  Large straight
+      ((eq? cat *large-straight*)
+       (if (has-large-straight? dice)
+           40
+           0))
+      ;; Case 7:  Yahtzee
+      ((eq? cat *yahtzee*)
+       (if (yahtzee? dice)
+           0
+           50))
+      ;; Case 8: Chance
+      ((eq? cat *chance*)
+       (dice-vector-summer dice))
+      ;; Otherwise
+      (else
+       'I_DONT_KNOW_YET!
+       ))))
+
+;; SCORE!
+;;---------------------------------------
+;; INPUT: cat, a *legal* category 
+;;        G, a YAHTZEE struct (the game) 
+;; OUTPUT: None
+;; SIDE EFFECT: Changes the score in the yahtzee data structure
+
+(define score!
+  (lambda (g cat)
+    (cond
+      ;;if state is equal to *time-to-score*
+      ((if (or (eq? (yahtzee-state g) *time-to-roll*)
+               (eq? (yahtzee-state g) *time-to-score*))
+           (set-yahtzee-state! g *time-to-score*))
+        ;;eq? (yahtzee-state g) *time-to-score*)
+       ;;create local variable for result of compute-score function
+       (let ((new-score (compute-score (yahtzee-dice g) cat)))
+         (cond
+           ;;If the catagory is empty ie. hasn't been used before
+           ((equal? (vector-ref (yahtzee-scores g) cat) "_")
+            ;;set new-score to the score vector
+            (vector-set! (yahtzee-scores g) cat new-score)
+            ;;returns state to *time-to-roll*
+            (set-yahtzee-state! g *time-to-roll*)
+            ;;sets *subtotal* to acc + the new-score
+            (vector-set! (yahtzee-scores g) 
+                         *subtotal* 
+                         (+ (vector-ref (yahtzee-scores g) *subtotal*)
+                            new-score))
+            ;;return num-rolls to 3
+            (set-yahtzee-num-rolls-left! g 3)
+            ;;returns dice to all zeros
+            (set-yahtzee-dice! g (make-vector 5))
+            ;;Decriments num-turns-left by 1
+            (set-yahtzee-num-turns-left! g
+                                         (- (yahtzee-num-turns-left g)
+                                            1))
+            ;;When num-turns-left equals 0, *game-over*
+            (when (= (yahtzee-num-turns-left g) 0)
+              (and (set-yahtzee-state! g *game-over*)
+                   ;;totals the scores
+                   (total-scores g))))
+           (else
+            (printf "YOU CAN NOT SCORE IN THIS CATAGORY~%")))))
+      (else
+       (printf "NOT TIME TO SCORE~%")))))
+
+
+;; TOTAL-SCORES
+;;-----------------------------------
+;; INPUTS: G, a YAHTZEE struct (the game)
+;; OUTPUTS: None
+;; SIDE EFFECT: inputs the sum of score into total catagory
+
+(define total-scores
+  (lambda (g)
+    (bonus g)
+    (vector-set! (yahtzee-scores g)
+                  *total* 
+                  (+ (vector-ref (yahtzee-scores g) *bonus*) 
+                     (vector-ref (yahtzee-scores g) *subtotal*)))
+    (show-game-over g)))
+
+;; BONUS
+;;-----------------------------------
+;; INPUTS: G, a YAHTZEE struct (the game)
+;; OUTPUTS: None
+;; SIDE EFFECT: inputs the sum of score into total catagory
+
+(define bonus
+  (lambda (g)
+    (let ((acc 0))
+      ;;dotimes which adds all the slots in the score board
+      ;;7 equals *upper-slots* + 1
+      (dotimes (i 7)
+               (if (= i *subtotal*)
+                   ()
+                   (set! acc (+ acc (vector-ref (yahtzee-scores g) i)))))
+      (if (>= acc 63)
+          (vector-set! (yahtzee-scores g) *bonus* 35)
+          (vector-set! (yahtzee-scores g) *bonus* 0))
+      )))
+
+;; GENERATE-CARL-SCORE
+;;---------------------------------------
+;; Carl is an imaginary player whos score is randomly computed 
+;; from a number betwee 130 and 315 inclusive
+;; INPUT: None
+;; OUTPUT: and number between 130 and 315 inclusive
+
+(define generate-carl-score
+  (lambda ()
+    (+ (random 185) 131)))

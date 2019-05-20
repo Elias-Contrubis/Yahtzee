@@ -1,0 +1,127 @@
+;; ==================================
+;;  CMPU-101, Spring 2017
+;;  yahtzee-model.txt (template)
+;; ==================================
+
+(load "asmt-helper.txt")
+(load "yahtzee-controller.txt")
+(load "yahtzee-view.txt")
+(load "yahtzee-text-based.txt")
+
+;;  Global variables 
+;;   -- to avoid having lots of "magic numbers" scattered about the code
+
+;;  The number of slots in the score sheet
+
+(define *num-slots* 16)
+
+;;  Names for the various slots in the score sheet
+
+(define *subtotal* 0) ;; <---- Moved SUBTOTAL to slot 0
+(define *ones* 1)
+(define *twos* 2)
+(define *threes* 3)
+(define *fours* 4)
+(define *fives* 5)
+(define *sixes* 6)
+(define *bonus* 7)
+(define *3-of-a-kind* 8)
+(define *4-of-a-kind* 9)
+(define *full-house* 10)
+(define *small-straight* 11)
+(define *large-straight* 12)
+(define *yahtzee* 13)
+(define *chance* 14)
+(define *total* 15)
+
+;;  Useful collections of slots in the score sheet
+
+;;  UPPER-SLOTS:  the first six categories 
+
+(define *upper-slots* (list *ones* *twos* *threes* *fours* *fives* *sixes*))
+
+;;  SLOTS-THAT-SUM-THE-DICE
+
+(define *slots-that-sum-the-dice* (list *3-of-a-kind* *4-of-a-kind* *chance*))
+
+;;  NON-SLOTS:  Slots in the score sheet that the user cannot select
+
+(define *non-slots* (list *bonus* *subtotal* *total*))
+
+;;  CAT-NAMES:  The names to be displayed for the various categories
+
+(define *cat-names* #("SUBTOTAL:         "
+                      "*ones*:           "
+                      "*twos*:           "
+                      "*threes*:         "
+                      "*fours*:          "
+                      "*fives*:          "
+                      "*sixes*:          "
+                      "BONUS:            " 
+                      "*3-of-a-kind*:    "
+                      "*4-of-a-kind*:    "
+                      "*full-house*:     "
+                      "*small-straight*: "
+                      "*large-straight*: "
+                      "*yahtzee*:        "
+                      "*chance*:         "
+                      "TOTAL:            "))
+
+;;  The YAHTZEE data structure
+;; -----------------------------------------------
+;;  STATE:   one of *time-to-roll*, *time-to-score*, *game-over*
+;;  SCORES:  the vector of scores that constitute the score sheet
+;;  DICE:    the vector of dice
+;;  NUM-ROLLS-LEFT:  its value is 3, 2, 1 or 0.
+;;  NUM-TURNS-LEFT:  equals the number of categories that have not
+;;                   yet received a score.
+
+(define-struct yahtzee
+  (state scores dice num-rolls-left num-turns-left))
+
+;; CARL 
+;;----------------------------
+;; Creating a vector that holds player two's randomly 
+;; computed score
+
+(define carl
+  (make-vector 1))
+
+;; The values for the STATE field in the YAHTZEE struct
+
+(define *time-to-roll* 'time-to-roll)
+(define *time-to-score* 'time-to-score)
+(define *game-over* 'game-over)
+
+;;  NEW-GAME
+;; -----------------------------------
+;;  INPUTS:  None
+;;  OUTPUT:  A suitably initialized YAHTZEE struct
+
+(define new-game
+  (lambda ()
+    (vector-set! carl 0 (generate-carl-score))
+    (make-yahtzee *time-to-roll* (score-board) (make-vector 5) 3 13)
+   
+    ))
+
+;; SCORE-BOARD
+;; ----------------------------------
+;; INPUTS: NONE
+;; OUTPUTS: SCORE-VECKY, the initial values of the score-board
+
+(define score-board
+  (lambda ()
+    (let ((score-vecky (make-vector *num-slots*)))
+      (dotimes (i 16)
+               ;;do times if i = bonus subtotal or total vector-set! "-"
+               ;;otherwise vector-set! 0
+               (cond
+                 ((or (= i *bonus*)
+                       (= i *total*))
+                   (vector-set! score-vecky i (format "-")))
+                 ((= i *subtotal*)
+                  (vector-set! score-vecky i 0))
+                 (else
+                   (vector-set! score-vecky i (format "_")))))
+      score-vecky)))

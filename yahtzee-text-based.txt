@@ -1,0 +1,56 @@
+;;==========================
+;; CMPU-101, Spring 2017
+;; yahtzee-text-based.txt
+;;==========================
+
+
+;; SHOW-YAHTZEE
+;;----------------------------------------------
+;; INPUT: g, a yahtzee struct
+;; OUTPUT: none
+;; SIDE EFFECT: Prints out info RE: current state of game
+
+(define show-yahtzee
+  (lambda (g)
+    ;; Just print out the string that yahtzee->string generates
+    (printf (yahtzee->string g))))
+
+;;  ROLL-SOME-WR! CALLED: roll
+;; ----------------------------------------------------
+;;  INPUT:   g, a Yahtzee struct
+;;  OUTPUT:  None
+;;  SIDE EFFECT:  Carries out the corresponding controller
+;;    function, which destructively modifies g, and then
+;;    calls SHOW-YAHTZEE to see the results.
+
+(define roll
+  (lambda (g dice-veck)
+    (roll-some! g dice-veck)
+    (show-yahtzee g)))
+
+;; SCORE-WR! CALLED score
+;;------------------------------------------------------
+;; INPUT: g, a yahtzee struct
+;; OUTPUT: None
+;;  SIDE EFFECT:  Carries out the corresponding controller
+;;    function, which destructively modifies g, and then
+;;    calls SHOW-YAHTZEE to see the results.
+
+(define score
+  (lambda (g cat)
+    (score! g cat)
+    (show-yahtzee g)))
+
+;; SHOW-GAME-OVER
+;;----------------------------------------------------
+;; INPUT: g, a yahtzee struct
+;; OUTPUT: none
+;; SIDE EFFECT: Prints out the total score and the bonus
+
+(define show-game-over
+  (lambda (g)
+    ;; Just print out the string that game-over->string generates
+    (printf (game-over->string g))
+    ;;(if
+    ;; (>= ))
+    ))
